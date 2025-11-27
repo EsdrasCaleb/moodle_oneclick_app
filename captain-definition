@@ -1,35 +1,4 @@
 {
- "schemaVersion": 4,
- "dockerfilePath": "./Dockerfile",
- "buildArgs": {
-    "PHP_VERSION": "8.1"
- },
- "serviceUpdateOverride": {
-    "TaskTemplate": {
-       "ContainerSpec": {
-          "Env": [
-             "MOODLE_GIT_REPO=https://github.com/moodle/moodle.git",
-             "MOODLE_VERSION=MOODLE_402_STABLE",
-             "MOODLE_LANG=pt_br",
-             "MOODLE_URL=http://moodle.exemplo.com",
-             "MOODLE_PLUGINS_JSON=[]",
-             "MOODLE_EXTRA_PHP=",
-             "DB_TYPE=pgsql",
-             "DB_HOST=srv-captain--postgres",
-             "DB_PORT=5432",
-             "DB_NAME=moodle",
-             "DB_USER=postgres",
-             "DB_PASS=CHANGE_ME_IMMEDIATELY"
-          ],
-          "Mounts": [
-             {
-                "Type": "volume",
-                "Source": "moodle-data-persistence",
-                "Target": "/var/www/moodledata",
-                "ReadOnly": false
-             }
-          ]
-       }
-    }
- }
+  "schemaVersion": 2,
+  "dockerfilePath": "./Dockerfile",
 }

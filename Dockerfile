@@ -1,13 +1,28 @@
-ARG PHP_VERSION=8.1
+ARG PHP_VERSION=${PHP_VERSION:-8.1}
+
 FROM php:${PHP_VERSION}-fpm-bullseye
 
 # Metadados
 LABEL maintainer="Esdras Caleb"
 
-# Argumentos e Variáveis de Ambiente Padrão
+# --- Variáveis de Ambiente Padrão (Conforme solicitado) ---
+# Core
 ENV MOODLE_GIT_REPO="https://github.com/moodle/moodle.git"
-ENV MOODLE_VERSION="MOODLE_402_STABLE"
+ENV MOODLE_VERSION="MOODLE_405_STABLE"
 ENV MOODLE_LANG="pt_br"
+ENV MOODLE_URL="http://moodle.exemplo.com"
+ENV MOODLE_PLUGINS_JSON="[]"
+ENV MOODLE_EXTRA_PHP=""
+
+# Banco de Dados
+ENV DB_TYPE="pgsql"
+ENV DB_HOST="srv-captain--postgres"
+ENV DB_PORT="5432"
+ENV DB_NAME="moodle"
+ENV DB_USER="postgres"
+ENV DB_PASS="CHANGE_ME_IMMEDIATELY"
+
+# Sistema
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 1. Instalação de Dependências
@@ -71,7 +86,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# Copia arquivos opcionais se existirem (O * garante que não falha se não existirem)
+# Copia arquivos opcionais se existirem
 COPY plugins.json* /usr/local/bin/default_plugins.json
 COPY config-extra.php* /usr/local/bin/config-extra.php
 

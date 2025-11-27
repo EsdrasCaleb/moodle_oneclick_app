@@ -4,7 +4,7 @@ set -e
 echo ">>> Iniciando Container Moodle..."
 
 # Defaults
-: "${MOODLE_VERSION:=MOODLE_402_STABLE}"
+: "${MOODLE_VERSION:=MOODLE_405_STABLE}"
 : "${MOODLE_GIT_REPO:=https://github.com/moodle/moodle.git}"
 : "${DB_TYPE:=pgsql}"
 : "${DB_PORT:=5432}"
@@ -75,6 +75,9 @@ if [ ! -z "$PLUGINS_CONTENT" ]; then
 fi
 chown -R www-data:www-data /var/www/html
 
+# ----------------------------------------------------------------------
+# 3. Geração Dinâmica do config.php (SEM EVAL)
+# ----------------------------------------------------------------------
 if [ ! -f "/var/www/html/config.php" ]; then
     echo ">>> Gerando config.php dinâmico..."
 
