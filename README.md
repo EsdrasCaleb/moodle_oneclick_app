@@ -1,10 +1,10 @@
-Automated Moodle for CapRover
+# Automated Moodle for CapRover
 
 This repository contains a robust and automated implementation of Moodle (LMS), specifically optimized for deployment via CapRover.
 
 Unlike official images, this version functions as a "Deployment Manager": it downloads Moodle core, installs plugins via Git, dynamically configures config.php based on environment variables, and manages Nginx/PHP-FPM/Cron within a single container.
 
-🚀 Features
+## 🚀 Features
 
 Zero-Touch Config: config.php is automatically generated from CapRover environment variables.
 
@@ -16,7 +16,7 @@ Full Stack: Single container running Nginx (Web Server), PHP-FPM, and Cron (via 
 
 Advanced Customization: Allows injection of raw PHP configurations (MOODLE_EXTRA_PHP) directly from the CapRover dashboard.
 
-🛠️ How to Deploy on CapRover
+## 🛠️ How to Deploy on CapRover
 
 Prerequisites
 
@@ -43,6 +43,7 @@ Note: The initial deploy will fail or keep restarting. This is normal because th
 Go to the App Configs tab. Thanks to captain-definition, all necessary variables will already be listed there. Fill in the values:
 
 | Variable | Description | Example |
+|---|---|---|
 | MOODLE_URL | Critical: The public URL of your app. | https://mymoodle.yourdomain.com |
 | DB_HOST | Name of the database container in CapRover. | srv-captain--my-postgres |
 | DB_NAME | Database name. | moodle |
@@ -52,7 +53,7 @@ Go to the App Configs tab. Thanks to captain-definition, all necessary variables
 
 Click Save & Update. The container will restart, install Moodle, and become available.
 
-🧩 Plugin Management (JSON)
+## 🧩 Plugin Management (JSON)
 
 You can automatically install plugins by defining the MOODLE_PLUGINS_JSON environment variable in CapRover or by creating a plugins.json file in the repository root (if using a private fork).
 
@@ -82,7 +83,7 @@ If the directory exists: Performs git pull (and checkout if a branch is defined)
 
 After downloading, the script automatically runs Moodle's upgrade.php.
 
-⚙️ Advanced Configuration (config.php)
+## ⚙️ Advanced Configuration (config.php)
 
 It is not necessary (nor possible) to edit the config.php file manually, as it is recreated on every boot. To add custom configurations (such as reverse proxy, debug, or Redis settings), use the MOODLE_EXTRA_PHP variable.
 
@@ -99,7 +100,7 @@ $CFG->reverseproxy = 1;
 
 The script will inject this code directly into config.php before setup.
 
-💾 Data Persistence
+## 💾 Data Persistence
 
 The captain-definition automatically configures a persistent volume for the Moodle data directory.
 
@@ -109,7 +110,7 @@ Docker Volume: moodle-data-persistence
 
 Warning: The Moodle source code (/var/www/html) is NOT persistent by default. This is intentional to allow version updates by simply changing the Docker tag or the MOODLE_VERSION variable. If you edit core files manually inside the container, you will lose changes on the next deploy.
 
-⚠️ Troubleshooting
+## ⚠️ Troubleshooting
 
 1. "Redirect Loop" error or HTTPS issues:
    CapRover handles SSL Termination. Moodle needs to know it is running under HTTPS. Add the following to the MOODLE_EXTRA_PHP variable:
