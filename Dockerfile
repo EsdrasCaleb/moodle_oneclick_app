@@ -1,5 +1,4 @@
-# Define a versão do PHP com valor padrão 8.3 se não for passado via build-arg
-ARG PHP_VERSION=${PHP_VERSION:-8.3}
+ARG PHP_VERSION=${PHP_VERSION:-8.1}
 
 FROM php:${PHP_VERSION}-fpm-bullseye
 
@@ -9,7 +8,7 @@ LABEL maintainer="Esdras Caleb"
 # --- Variáveis de Ambiente Padrão ---
 # Core
 ENV MOODLE_GIT_REPO="https://github.com/moodle/moodle.git"
-ENV MOODLE_VERSION="MOODLE_402_STABLE"
+ENV MOODLE_VERSION="MOODLE_405_STABLE"
 ENV MOODLE_LANG="pt_br"
 ENV MOODLE_URL="http://moodle.exemplo.com"
 ENV MOODLE_PLUGINS_JSON="[]"
