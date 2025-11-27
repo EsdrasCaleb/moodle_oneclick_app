@@ -35,7 +35,7 @@ fi
 chown -R www-data:www-data /var/www/html
 
 # ----------------------------------------------------------------------
-# 2. Plugins (Lógica Branch mantida)
+# 2. Plugins
 # ----------------------------------------------------------------------
 PLUGINS_CONTENT=""
 if [ ! -z "$MOODLE_PLUGINS_JSON" ] && [ "$MOODLE_PLUGINS_JSON" != "[]" ]; then
@@ -75,16 +75,22 @@ if [ ! -z "$PLUGINS_CONTENT" ]; then
 fi
 chown -R www-data:www-data /var/www/html
 
-# ----------------------------------------------------------------------
-# 3. Geração Dinâmica do config.php
-# ----------------------------------------------------------------------
-# Aqui está a mágica. Criamos um config.php que lê ENV vars.
-# Se mudarmos o domínio no CapRover, o Moodle aceita na hora.
-
 if [ ! -f "/var/www/html/config.php" ]; then
     echo ">>> Gerando config.php dinâmico..."
 
-    # Criamos o arquivo com EOF. Note que as variáveis $CFG ficam literais.
+    # Prepara o conteúdo Extra
+    EXTRA_CONFIG_CONTENT=""
+
+    if [ ! -z "$MOODLE_EXTRA_PHP" ]; then
+        echo ">>> Injetando configurações extras via Variável de Ambiente."
+        EXTRA_CONFIG_CONTENT="$MOODLE_EXTRA_PHP"
+    elif [ -f "/usr/local/bin/config-extra.php" ]; then
+        echo ">>> Injetando configurações extras via Arquivo (config-extra.php)."
+        # Remove tag PHP de abertura se a pessoa tiver colocado por engano, para não quebrar o arquivo
+        EXTRA_CONFIG_CONTENT=$(cat /usr/local/bin/config-extra.php | sed 's/<?php//g' | sed 's/?>//g')
+    fi
+
+    # 1. Escreve o cabeçalho padrão
     cat <<EOF > /var/www/html/config.php
 <?php
 unset(\$CFG);
@@ -107,14 +113,18 @@ global \$CFG;
 \$CFG->wwwroot   = getenv('MOODLE_URL');
 \$CFG->dataroot  = '/var/www/moodledata';
 \$CFG->admin     = 'admin';
-
 \$CFG->directorypermissions = 0777;
 
-// --- INICIO CONFIGURACAO EXTRA (Injetado via ENV) ---
-// Adicione configs extras como: \$CFG->sslproxy = 1;
-if (getenv('MOODLE_EXTRA_PHP')) {
-    eval(getenv('MOODLE_EXTRA_PHP'));
-}
+// --- INICIO CONFIGURACAO EXTRA ---
+EOF
+
+    # 2. Injeta o conteúdo extra diretamente (Append)
+    if [ ! -z "$EXTRA_CONFIG_CONTENT" ]; then
+        echo "$EXTRA_CONFIG_CONTENT" >> /var/www/html/config.php
+    fi
+
+    # 3. Escreve o rodapé
+    cat <<EOF >> /var/www/html/config.php
 // --- FIM CONFIGURACAO EXTRA ---
 
 require_once(__DIR__ . '/lib/setup.php');
@@ -122,7 +132,7 @@ EOF
 
     chown www-data:www-data /var/www/html/config.php
     chmod 644 /var/www/html/config.php
-    echo ">>> config.php criado com sucesso."
+    echo ">>> config.php criado e configurado."
 fi
 
 # ----------------------------------------------------------------------
@@ -131,8 +141,6 @@ fi
 echo ">>> Aguardando Banco ($DB_HOST)..."
 until echo > /dev/tcp/$DB_HOST/$DB_PORT; do sleep 3; done 2>/dev/null || true
 
-# Verifica se o Moodle já está instalado (tabela config existe?)
-# Usamos o install_database.php que é seguro para rodar.
 if sudo -u www-data php admin/cli/install_database.php \
     --lang="$MOODLE_LANG" \
     --adminuser="${MOODLE_ADMIN_USER:-admin}" \
@@ -140,14 +148,11 @@ if sudo -u www-data php admin/cli/install_database.php \
     --adminemail="${MOODLE_ADMIN_EMAIL:-admin@localhost}" \
     --agree-license > /dev/null 2>&1; then
 
-    echo ">>> Instalação do Banco de Dados concluída com sucesso!"
-
-    # Define nome do site após instalar
+    echo ">>> Instalação do Banco de Dados concluída!"
     sudo -u www-data php admin/cli/cfg.php --name=fullname --set="${MOODLE_SITE_FULLNAME:-Moodle Site}"
     sudo -u www-data php admin/cli/cfg.php --name=shortname --set="${MOODLE_SITE_SHORTNAME:-Moodle}"
-
 else
-    echo ">>> Banco já parece instalado ou erro na instalação. Tentando Upgrade..."
+    echo ">>> Executando Upgrade..."
     sudo -u www-data php admin/cli/upgrade.php --non-interactive
 fi
 
