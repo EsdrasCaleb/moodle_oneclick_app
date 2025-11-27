@@ -1,14 +1,15 @@
-ARG PHP_VERSION=${PHP_VERSION:-8.1}
+# Define a versão do PHP com valor padrão 8.3 se não for passado via build-arg
+ARG PHP_VERSION=${PHP_VERSION:-8.3}
 
 FROM php:${PHP_VERSION}-fpm-bullseye
 
 # Metadados
 LABEL maintainer="Esdras Caleb"
 
-# --- Variáveis de Ambiente Padrão (Conforme solicitado) ---
+# --- Variáveis de Ambiente Padrão ---
 # Core
 ENV MOODLE_GIT_REPO="https://github.com/moodle/moodle.git"
-ENV MOODLE_VERSION="MOODLE_405_STABLE"
+ENV MOODLE_VERSION="MOODLE_402_STABLE"
 ENV MOODLE_LANG="pt_br"
 ENV MOODLE_URL="http://moodle.exemplo.com"
 ENV MOODLE_PLUGINS_JSON="[]"
@@ -26,6 +27,7 @@ ENV DB_PASS="CHANGE_ME_IMMEDIATELY"
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 1. Instalação de Dependências
+# ADICIONADO: libsodium-dev (Correção do erro de build)
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
@@ -42,6 +44,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libonig-dev \
     libxslt1-dev \
+    libsodium-dev \
     graphviz \
     aspell \
     ghostscript \
