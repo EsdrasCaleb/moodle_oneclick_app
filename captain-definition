@@ -1,0 +1,28 @@
+{
+ "schemaVersion": 4,
+ "dockerfilePath": "./Dockerfile",
+ "buildArgs": {
+    "PHP_VERSION": "8.1"
+ },
+ "serviceUpdateOverride": {
+    "TaskTemplate": {
+       "ContainerSpec": {
+          "Env": [
+             "MOODLE_GIT_REPO=https://github.com/moodle/moodle.git",
+             "MOODLE_VERSION=MOODLE_402_STABLE",
+             "MOODLE_LANG=pt_br",
+             "MOODLE_PLUGINS_JSON=[]",
+             "MOODLE_EXTRA_PHP="
+          ],
+          "Mounts": [
+             {
+                "Type": "volume",
+                "Source": "moodle-data-persistence",
+                "Target": "/var/www/moodledata",
+                "ReadOnly": false
+             }
+          ]
+       }
+    }
+ }
+}

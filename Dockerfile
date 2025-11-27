@@ -2,7 +2,7 @@ ARG PHP_VERSION=8.1
 FROM php:${PHP_VERSION}-fpm-bullseye
 
 # Metadados
-LABEL maintainer="Seu Nome/Projeto"
+LABEL maintainer="Esdras Caleb"
 
 # Argumentos e Variáveis de Ambiente Padrão
 ENV MOODLE_GIT_REPO="https://github.com/moodle/moodle.git"
@@ -10,8 +10,7 @@ ENV MOODLE_VERSION="MOODLE_402_STABLE"
 ENV MOODLE_LANG="pt_br"
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. Instalação de Dependências do Sistema e Extensões PHP
-# Incluindo Nginx, Git, Supervisor, JQ (para o JSON), e bibliotecas gráficas/zip/banco
+# 1. Instalação de Dependências
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
@@ -34,23 +33,10 @@ RUN apt-get update && apt-get install -y \
     clamav \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
-        gd \
-        intl \
-        zip \
-        soap \
-        opcache \
-        pdo \
-        pdo_pgsql \
-        pgsql \
-        mysqli \
-        pdo_mysql \
-        exif \
-        bcmath \
-        xsl \
-        sodium \
+        gd intl zip soap opcache pdo pdo_pgsql pgsql mysqli pdo_mysql exif bcmath xsl sodium \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 2. Configuração do PHP (Valores recomendados para Moodle)
+# 2. Config Opcache e PHP
 RUN { \
         echo 'opcache.memory_consumption=128'; \
         echo 'opcache.interned_strings_buffer=8'; \
@@ -75,21 +61,23 @@ RUN mkdir -p /var/www/moodledata \
     && chmod 777 /var/www/moodledata \
     && mkdir -p /var/log/supervisor
 
-# 4. Configuração do Cron do Moodle
+# 4. Cron
 RUN echo "*/1 * * * * /usr/local/bin/php /var/www/html/admin/cli/cron.php > /dev/null" > /etc/cron.d/moodle-cron \
     && chmod 0644 /etc/cron.d/moodle-cron \
     && crontab /etc/cron.d/moodle-cron
 
-# 5. Copiar Configurações
+# 5. Copiar Configurações e Scripts
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
+# Copia arquivos opcionais se existirem (O * garante que não falha se não existirem)
+COPY plugins.json* /usr/local/bin/default_plugins.json
+COPY config-extra.php* /usr/local/bin/config-extra.php
+
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Porta Exposta (Nginx interno)
 EXPOSE 80
-
 WORKDIR /var/www/html
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
