@@ -1,0 +1,108 @@
+captainVersion: 4
+services:
+  # -------------------------------------------------------------------------
+  # 1. Banco de Dados (PostgreSQL)
+  # -------------------------------------------------------------------------
+  $$cap_appname-db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: $$cap_db_password
+      POSTGRES_DB: moodle
+    volumes:
+      - $$cap_appname-db-data:/var/lib/postgresql/data
+    caproverExtra:
+      notExposeAsWebApp: 'true'
+
+  # -------------------------------------------------------------------------
+  # 2. A Aplicação Moodle (Sua Imagem do Docker Hub)
+  # -------------------------------------------------------------------------
+  $$cap_appname:
+    depends_on:
+      - $$cap_appname-db
+    # Agora usamos a imagem pronta que você hospedou no Docker Hub
+    image: $$cap_docker_image
+    restart: always
+    environment:
+      # --- Configurações Críticas ---
+      MOODLE_URL: $$cap_moodle_url
+      DB_HOST: srv-captain--$$cap_appname-db
+      DB_PORT: 5432
+      DB_NAME: moodle
+      DB_USER: postgres
+      DB_PASS: $$cap_db_password
+      DB_TYPE: pgsql
+
+      # --- Configurações da Sua Imagem ---
+      MOODLE_GIT_REPO: $$cap_moodle_git_repo
+      MOODLE_VERSION: $$cap_moodle_version
+      MOODLE_LANG: $$cap_moodle_lang
+      MOODLE_PLUGINS_JSON: $$cap_plugins_json
+      MOODLE_EXTRA_PHP: $$cap_extra_php
+
+    volumes:
+      - $$cap_appname-data:/var/www/moodledata
+    caproverExtra:
+      containerHttpPort: '80'
+
+caproverOneClickApp:
+  variables:
+    - id: $$cap_docker_image
+      label: Imagem Docker
+      description: A imagem pública no Docker Hub (ex: esdrascaleb/moodle-custom:latest).
+      defaultValue: esdrascaleb/moodle-custom:latest
+
+    - id: $$cap_moodle_url
+      label: Moodle URL
+      description: A URL completa (ex: https://moodle.seudominio.com).
+      defaultValue: http://moodle.exemplo.com
+      validRegex: /^(https?:\/\/)?[a-zA-Z0-9.-]+(\.[a-zA-Z]{2,})+.*$/
+
+    - id: $$cap_db_password
+      label: Senha do Banco de Dados
+      description: Uma senha forte para o PostgreSQL interno.
+      defaultValue: $$cap_gen_random_hex(16)
+
+    - id: $$cap_moodle_version
+      label: Versão do Moodle (Tag/Branch)
+      description: Qual versão do Moodle baixar internamente.
+      defaultValue: MOODLE_402_STABLE
+
+    - id: $$cap_moodle_git_repo
+      label: Repositório do Core Moodle
+      description: URL do Git oficial ou fork.
+      defaultValue: https://github.com/moodle/moodle.git
+
+    - id: $$cap_moodle_lang
+      label: Linguagem Principal
+      description: Pacote de linguagem padrão.
+      defaultValue: pt_br
+
+    - id: $$cap_plugins_json
+      label: Lista de Plugins (JSON)
+      description: Lista JSON de plugins para instalar automaticamente.
+      defaultValue: '[]'
+
+    - id: $$cap_extra_php
+      label: Configuração PHP Extra
+      description: Código PHP cru para injetar no config.php.
+      defaultValue: ''
+
+  instructions:
+    start: >-
+      Este Template instala um Moodle completo usando uma imagem Docker customizada e um banco PostgreSQL.
+      
+      Certifique-se de que a imagem Docker informada existe e é pública (ou que o CapRover tem credenciais para baixá-la).
+    end: >-
+      DEPLOY INICIADO!
+      
+      O CapRover está baixando sua imagem e subindo o banco de dados.
+      
+      Pode levar alguns minutos para o Moodle baixar o core e instalar o banco no primeiro boot.
+      Acompanhe os logs do app '$$cap_appname' se necessário.
+      
+      IMPORTANTE: Ative o HTTPS nas configurações do App assim que possível e garanta que a variável MOODLE_URL comece com https://.
+  displayName: Moodle Custom (Docker Image)
+  isOfficial: false
+  description: Moodle automatizado via Imagem Docker Customizada.
+  documentation: https://github.com/EsdrasCaleb/moodle_sentry_app

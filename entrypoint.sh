@@ -1,38 +1,45 @@
 #!/bin/bash
 set -e
 
+# --- Definição do Diretório de Instalação ---
+MOODLE_DIR="/var/www/moodle"
+
 echo ">>> Iniciando Container Moodle..."
+echo ">>> Diretório de Instalação: $MOODLE_DIR"
 
 # Defaults
-: "${MOODLE_VERSION:=MOODLE_405_STABLE}"
+: "${MOODLE_VERSION:=MOODLE_402_STABLE}"
 : "${MOODLE_GIT_REPO:=https://github.com/moodle/moodle.git}"
 : "${DB_TYPE:=pgsql}"
 : "${DB_PORT:=5432}"
 : "${MOODLE_LANG:=pt_br}"
 
 # ----------------------------------------------------------------------
-# 1. Core do Moodle
+# 1. Core do Moodle (Instalação Limpa)
 # ----------------------------------------------------------------------
-if [ ! -f "/var/www/html/version.php" ]; then
-    echo ">>> Instalando Core Moodle (${MOODLE_VERSION})..."
-    if [ "$(ls -A /var/www/html)" ]; then
-        echo "AVISO: Pasta não vazia. Tentando git init/pull..."
-        git config --global --add safe.directory /var/www/html
-        git init
-        git remote add origin "$MOODLE_GIT_REPO" || git remote set-url origin "$MOODLE_GIT_REPO"
+if [ ! -d "$MOODLE_DIR" ]; then
+    echo ">>> Diretório do Moodle não existe. Clonando Repositório..."
+
+    # Clone direto para a pasta final (cria a pasta automaticamente)
+    git clone --branch "$MOODLE_VERSION" --depth 1 "$MOODLE_GIT_REPO" "$MOODLE_DIR"
+
+    echo ">>> Clone concluído."
+    chown -R www-data:www-data "$MOODLE_DIR"
+else
+    # Se a pasta existe, verificamos se é um repo git válido
+    if [ -d "$MOODLE_DIR/.git" ]; then
+        echo ">>> Moodle já instalado. Verificando atualizações (git pull)..."
+        cd "$MOODLE_DIR"
+        git config --global --add safe.directory "$MOODLE_DIR"
         git fetch origin "$MOODLE_VERSION"
         git reset --hard FETCH_HEAD
+        chown -R www-data:www-data "$MOODLE_DIR"
     else
-        git clone --branch "$MOODLE_VERSION" --depth 1 "$MOODLE_GIT_REPO" .
+        echo "ERRO CRÍTICO: O diretório $MOODLE_DIR existe mas não é um repositório Git."
+        echo "Por favor, limpe o container ou o volume."
+        exit 1
     fi
-else
-    echo ">>> Atualizando Core Moodle (git pull)..."
-    git config --global --add safe.directory /var/www/html
-    git fetch origin "$MOODLE_VERSION"
-    git reset --hard FETCH_HEAD
 fi
-
-chown -R www-data:www-data /var/www/html
 
 # ----------------------------------------------------------------------
 # 2. Plugins
@@ -51,7 +58,10 @@ if [ ! -z "$PLUGINS_CONTENT" ]; then
             GIT_URL=$(echo "$i" | jq -r '.giturl')
             GIT_BRANCH=$(echo "$i" | jq -r '.branch // empty')
             INSTALL_PATH=$(echo "$i" | jq -r '.installpath')
-            FULL_PATH="/var/www/html/$INSTALL_PATH"
+
+            # Caminho relativo ao novo MOODLE_DIR
+            FULL_PATH="$MOODLE_DIR/$INSTALL_PATH"
+
             CLONE_ARGS=""
             [ ! -z "$GIT_BRANCH" ] && CLONE_ARGS="--branch $GIT_BRANCH"
 
@@ -70,31 +80,25 @@ if [ ! -z "$PLUGINS_CONTENT" ]; then
                 git clone $CLONE_ARGS "$GIT_URL" "$FULL_PATH"
             fi
         done
-        cd /var/www/html
+        cd "$MOODLE_DIR"
     fi
 fi
-chown -R www-data:www-data /var/www/html
+chown -R www-data:www-data "$MOODLE_DIR"
 
 # ----------------------------------------------------------------------
-# 3. Geração Dinâmica do config.php (SEM EVAL)
+# 3. Geração Dinâmica do config.php
 # ----------------------------------------------------------------------
-if [ ! -f "/var/www/html/config.php" ]; then
+if [ ! -f "$MOODLE_DIR/config.php" ]; then
     echo ">>> Gerando config.php dinâmico..."
 
-    # Prepara o conteúdo Extra
     EXTRA_CONFIG_CONTENT=""
-
     if [ ! -z "$MOODLE_EXTRA_PHP" ]; then
-        echo ">>> Injetando configurações extras via Variável de Ambiente."
         EXTRA_CONFIG_CONTENT="$MOODLE_EXTRA_PHP"
     elif [ -f "/usr/local/bin/config-extra.php" ]; then
-        echo ">>> Injetando configurações extras via Arquivo (config-extra.php)."
-        # Remove tag PHP de abertura se a pessoa tiver colocado por engano, para não quebrar o arquivo
         EXTRA_CONFIG_CONTENT=$(cat /usr/local/bin/config-extra.php | sed 's/<?php//g' | sed 's/?>//g')
     fi
 
-    # 1. Escreve o cabeçalho padrão
-    cat <<EOF > /var/www/html/config.php
+    cat <<EOF > "$MOODLE_DIR/config.php"
 <?php
 unset(\$CFG);
 global \$CFG;
@@ -121,21 +125,19 @@ global \$CFG;
 // --- INICIO CONFIGURACAO EXTRA ---
 EOF
 
-    # 2. Injeta o conteúdo extra diretamente (Append)
     if [ ! -z "$EXTRA_CONFIG_CONTENT" ]; then
-        echo "$EXTRA_CONFIG_CONTENT" >> /var/www/html/config.php
+        echo "$EXTRA_CONFIG_CONTENT" >> "$MOODLE_DIR/config.php"
     fi
 
-    # 3. Escreve o rodapé
-    cat <<EOF >> /var/www/html/config.php
+    cat <<EOF >> "$MOODLE_DIR/config.php"
 // --- FIM CONFIGURACAO EXTRA ---
 
 require_once(__DIR__ . '/lib/setup.php');
 EOF
 
-    chown www-data:www-data /var/www/html/config.php
-    chmod 644 /var/www/html/config.php
-    echo ">>> config.php criado e configurado."
+    chown www-data:www-data "$MOODLE_DIR/config.php"
+    chmod 644 "$MOODLE_DIR/config.php"
+    echo ">>> config.php criado em $MOODLE_DIR."
 fi
 
 # ----------------------------------------------------------------------
@@ -143,6 +145,9 @@ fi
 # ----------------------------------------------------------------------
 echo ">>> Aguardando Banco ($DB_HOST)..."
 until echo > /dev/tcp/$DB_HOST/$DB_PORT; do sleep 3; done 2>/dev/null || true
+
+# Muda para o diretório correto antes de rodar comandos PHP
+cd "$MOODLE_DIR"
 
 if sudo -u www-data php admin/cli/install_database.php \
     --lang="$MOODLE_LANG" \

@@ -1,14 +1,11 @@
-ARG PHP_VERSION=${PHP_VERSION:-8.1}
-
+ARG PHP_VERSION=${PHP_VERSION:-8.3}
 FROM php:${PHP_VERSION}-fpm-bullseye
 
-# Metadados
 LABEL maintainer="Esdras Caleb"
 
 # --- Variáveis de Ambiente Padrão ---
-# Core
 ENV MOODLE_GIT_REPO="https://github.com/moodle/moodle.git"
-ENV MOODLE_VERSION="MOODLE_405_STABLE"
+ENV MOODLE_VERSION="MOODLE_402_STABLE"
 ENV MOODLE_LANG="pt_br"
 ENV MOODLE_URL="http://moodle.exemplo.com"
 ENV MOODLE_PLUGINS_JSON="[]"
@@ -22,11 +19,9 @@ ENV DB_NAME="moodle"
 ENV DB_USER="postgres"
 ENV DB_PASS="CHANGE_ME_IMMEDIATELY"
 
-# Sistema
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 1. Instalação de Dependências
-# ADICIONADO: libsodium-dev (Correção do erro de build)
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
@@ -53,7 +48,7 @@ RUN apt-get update && apt-get install -y \
         gd intl zip soap opcache pdo pdo_pgsql pgsql mysqli pdo_mysql exif bcmath xsl sodium \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 2. Config Opcache e PHP
+# 2. Configurações PHP
 RUN { \
         echo 'opcache.memory_consumption=128'; \
         echo 'opcache.interned_strings_buffer=8'; \
@@ -73,28 +68,30 @@ RUN { \
     } > /usr/local/etc/php/conf.d/moodle-overrides.ini
 
 # 3. Preparação de Diretórios
+# moodledata continua fora do webroot por segurança
 RUN mkdir -p /var/www/moodledata \
     && chown -R www-data:www-data /var/www/moodledata \
     && chmod 777 /var/www/moodledata \
     && mkdir -p /var/log/supervisor
 
-# 4. Cron
-RUN echo "*/1 * * * * /usr/local/bin/php /var/www/html/admin/cli/cron.php > /dev/null" > /etc/cron.d/moodle-cron \
+# 4. Cron (Atualizado para o novo caminho /var/www/moodle)
+RUN echo "*/1 * * * * /usr/local/bin/php /var/www/moodle/admin/cli/cron.php > /dev/null" > /etc/cron.d/moodle-cron \
     && chmod 0644 /etc/cron.d/moodle-cron \
     && crontab /etc/cron.d/moodle-cron
 
-# 5. Copiar Configurações e Scripts
+# 5. Copiar Configurações
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# Copia arquivos opcionais se existirem
 COPY plugins.json* /usr/local/bin/default_plugins.json
 COPY config-extra.php* /usr/local/bin/config-extra.php
 
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 80
-WORKDIR /var/www/html
+
+# Define o novo diretório de trabalho padrão
+WORKDIR /var/www/moodle
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
