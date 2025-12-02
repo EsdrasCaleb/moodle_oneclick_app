@@ -35,7 +35,7 @@ services:
       MOODLE_ADMIN_PASS: $$cap_md_admin_pass
       MOODLE_ADMIN_EMAIL: $$cap_md_admin_email
 
-      MOODLE_EXTRA_PHP: "$$cap_extra_php"
+      MOODLE_EXTRA_PHP: '$$cap_extra_php'
 
       PHP_MEMORY_LIMIT: $$cap_php_memory_limit
       PHP_UPLOAD_MAX_FILESIZE: $$cap_php_upload_max
@@ -44,17 +44,15 @@ services:
       PHP_MAX_INPUT_VARS: $$cap_php_input_vars
 
       MOODLE_VERSION: $$cap_moodle_version
-      MOODLE_PLUGINS_JSON: "$$cap_moodle_plugins_json"
+      MOODLE_PLUGINS_JSON: '$$cap_moodle_plugins_json'
 
     volumes:
       - $$cap_appname-data:/var/www/moodledata
     caproverExtra:
       containerHttpPort: '80'
 
-
 caproverOneClickApp:
   variables:
-
     - id: $$cap_docker_image
       label: Docker Image
       defaultValue: esdrascaleb/moodle-docker-php-production:php8.1
@@ -66,7 +64,7 @@ caproverOneClickApp:
     - id: $$cap_use_external_db
       label: Use external database?
       description: yes = use host/port/user/pass | no = create local PostgreSQL
-      defaultValue: "no"
+      defaultValue: 'no'
       validRegex: /^(yes|no)$/
 
     # ===== Banco EXTERNO =====
@@ -74,14 +72,14 @@ caproverOneClickApp:
       label: External DB Host
       validIf:
         condition: $$cap_use_external_db
-        equals: "yes"
-      defaultValue: ""
+        equals: 'yes'
+      defaultValue: ''
     - id: $$cap_external_db_port
       label: External DB Port
       validIf:
         condition: $$cap_use_external_db
-        equals: "yes"
-      defaultValue: "5432"
+        equals: 'yes'
+      defaultValue: '5432'
 
     # ===== Banco INTERNO =====
     - id: $$cap_internal_db_enabled
@@ -91,28 +89,28 @@ caproverOneClickApp:
         {}
       validIf:
         condition: $$cap_use_external_db
-        equals: "no"
+        equals: 'no'
 
     - id: $$cap_effective_db_host
       label: INTERNAL DB HOST SWITCH
       defaultValue: srv-captain--$$cap_appname-db
       validIf:
         condition: $$cap_use_external_db
-        equals: "no"
+        equals: 'no'
 
     - id: $$cap_effective_db_host
       label: EXTERNAL DB HOST SWITCH
       defaultValue: $$cap_external_db_host
       validIf:
         condition: $$cap_use_external_db
-        equals: "yes"
+        equals: 'yes'
 
     - id: $$cap_effective_db_port
       label: INTERNAL DB PORT SWITCH
-      defaultValue: "5432"
+      defaultValue: '5432'
       validIf:
         condition: $$cap_use_external_db
-        equals: "no"
+        equals: 'no'
 
     - id: $$cap_effective_db_port
       label: EXTERNAL DB PORT SWITCH
@@ -135,7 +133,7 @@ caproverOneClickApp:
     # ===== PHP extra =====
     - id: $$cap_extra_php
       label: Extra PHP
-      defaultValue: "$CFG->sslproxy = 1;"
+      defaultValue: '$CFG->sslproxy = 1;'
 
     - id: $$cap_php_memory_limit
       label: PHP Memory Limit
@@ -155,12 +153,12 @@ caproverOneClickApp:
     - id: $$cap_php_max_exec
       label: PHP Max Execution Time
       description: Timeout in seconds
-      defaultValue: "600"
+      defaultValue: '600'
 
     - id: $$cap_php_input_vars
       label: PHP Max Input Vars
       description: Increase for large forms (gradebook etc.)
-      defaultValue: "5000"
+      defaultValue: '5000'
 
     # ===== DB =====
 
@@ -176,8 +174,7 @@ caproverOneClickApp:
     - id: $$cap_moodle_plugins_json
       label: Moodle Plugins JSON
       description: 'JSON array of plugins to install via Git. Example: [{"giturl":"...","branch":...,"installpath":"..."}]'
-      defaultValue: "[]"
-
+      defaultValue: '[]'
 
   instructions:
     start: >
@@ -185,7 +182,6 @@ caproverOneClickApp:
 
     end: >
       Done! Enable HTTPS after deploy.
-
 
   displayName: Moodle Production (Custom Image)
   isOfficial: false
