@@ -72,17 +72,21 @@ The first boot will fail or restart. This is normal — the app needs environmen
 
 6. Open **App Configs**. Fill in the variables listed automatically:
 
-| Variable            | Description                                           | Example                          |
-|---------------------|-------------------------------------------------------|----------------------------------|
-| MOODLE_URL          | Public HTTPS domain                                   | https://mymoodle.yourdomain.com  |
-| DB_HOST             | Internal DB host (CapRover service name)              | srv-captain--my-postgres         |
-| DB_NAME             | Database name                                         | moodle                           |
-| DB_USER             | Database user                                         | moodle / postgres                |
-| DB_PASS             | Database password                                     | mypassword123                    |
-| DB_TYPE             | Database driver                                       | pgsql or mysqli                  |
-| MOODLE_EXTRA_PHP    | Inject raw PHP into config.php                        | $CFG->sslproxy = 1;              |
-| MOODLE_VERSION      | Moodle branch                                         | MOODLE_405_STABLE                |
-| MOODLE_PLUGINS_JSON | Git plugin list                                       | `"[]"`                           |
+| Variable            | Description                              | Example                    |
+|---------------------|------------------------------------------|----------------------------|
+| MOODLE_URL          | Public HTTPS domain                      | https://mymoodle.yourdomain.com |
+| DB_HOST             | Internal DB host (CapRover service name) | srv-captain--my-postgres   |
+| DB_NAME             | Database name                            | moodle                     |
+| DB_USER             | Database user                            | moodle / postgres          |
+| DB_PASS             | Database password                        | mypassword123              |
+| DB_TYPE             | Database driver                          | pgsql or mysqli            |
+| MOODLE_EXTRA_PHP    | Inject raw PHP into config.php           | $CFG->sslproxy = 1;        |
+| MOODLE_VERSION      | Moodle branch                            | MOODLE_405_STABLE          |
+| MOODLE_PLUGINS_JSON | Git plugin list                          | `[]`                       |
+| MOODLE_ADMIN_USER | Moodle default admin username            | `admin`                    |
+| MOODLE_ADMIN_PASS | Moodle default admin password            | `MoodleAdmin123`          |
+| MOODLE_ADMIN_EMAIL | Moodle default admin email               | `admin@example.com`      |
+
 
 7. Click **Save & Update**.  
 Moodle will be installed automatically.
