@@ -1,0 +1,74 @@
+captainVersion: 4
+services:
+  # Database (PostgreSQL)
+  $$cap_appname-db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: moodle
+      POSTGRES_PASSWORD: $$cap_db_password
+      POSTGRES_DB: moodle
+    volumes:
+      - $$cap_appname-db-data:/var/lib/postgresql/data
+    caproverExtra:
+      notExposeAsWebApp: 'true'
+
+  # Moodle App using your Docker Hub image
+  $$cap_appname:
+    depends_on:
+      - $$cap_appname-db
+    image: $$cap_docker_image
+    restart: always
+    environment:
+      # Production URL
+      MOODLE_URL: $$cap_moodle_url
+
+      # Database connection (internal Docker DNS)
+      DB_HOST: srv-captain--$$cap_appname-db
+      DB_PORT: 5432
+      DB_TYPE: pgsql
+      DB_NAME: moodle
+      DB_USER: moodle
+      DB_PASS: $$cap_db_password
+
+      # Proxy / extra PHP config
+      MOODLE_EXTRA_PHP: "$$cap_extra_php"
+
+    volumes:
+      - $$cap_appname-data:/var/www/moodledata
+    caproverExtra:
+      containerHttpPort: '80'
+
+caproverOneClickApp:
+  variables:
+    - id: $$cap_docker_image
+      label: Docker Image
+      description: Use a custom Moodle PHP image. Example: esdrascaleb/moodle-docker-php-production:php8.1
+      defaultValue: esdrascaleb/moodle-docker-php-production:php8.1
+
+    - id: $$cap_moodle_url
+      label: Moodle URL
+      description: Full URL including https (example: https://moodle.yourdomain.com)
+      defaultValue: https://moodle.example.com
+
+    - id: $$cap_db_password
+      label: Database Password
+      defaultValue: $$cap_gen_random_hex(16)
+
+    - id: $$cap_extra_php
+      label: Extra PHP for Moodle
+      description: Required for reverse proxy (CapRover HTTPS termination).
+      defaultValue: "$CFG->sslproxy = 1;"
+
+  instructions:
+    start: >-
+      Deploying Moodle using your custom production Docker image.
+
+    end: >-
+      Deployment complete!
+
+      1. Enable HTTPS in CapRover App Configs.
+      2. If redirects break, ensure the URL starts with https:// in the app settings.
+
+  displayName: Moodle Production (Custom Image)
+  isOfficial: false
+  description: Production-ready Moodle deployment using a custom Docker Hub image.
