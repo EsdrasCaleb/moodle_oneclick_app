@@ -5,7 +5,7 @@ services:
   # Banco de Dados Interno (PostgreSQL)
   # -------------------------------------------------------------------------
   $$cap_appname-db:
-    image: postgres:14-alpine
+    image: postgres:18.1-alpine
     deploy:
       replicas: $$cap_db_replicas
     environment:
