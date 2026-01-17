@@ -13,7 +13,7 @@ services:
       POSTGRES_PASSWORD: $$cap_db_pass
       POSTGRES_DB: moodle
     volumes:
-      - $$cap_appname-db-data:/var/lib/postgresql/data
+      - $$cap_appname-db-data:/var/lib/postgresql/18/docker
     caproverExtra:
       notExposeAsWebApp: 'true'
 
